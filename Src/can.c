@@ -7,6 +7,7 @@
 
 #include "can.h"
 #include "debug.h"
+#include "temp.h"
 #include "stm32f4xx_hal.h"
 
 extern CAN_HandleTypeDef hcan1;
@@ -49,10 +50,25 @@ void can_send(can_variables* can) {
  * @retval None
  */
 void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan) {
+	can_variables rx_pkt;
+
 	debug_log_n("CAN packet received from 0x%X. Data ", hcan->pRxMsg->StdId);
 	for (int i = 0; i < 8; i++)
-		debug_log_n("%X ", hcan->pRxMsg->Data[i]);
+		debug_log_n("%X ", hcan->pRxMsg->Data[7-i]);
 	debug_log_n("\n");
+
+	rx_pkt.address = hcan->pRxMsg->StdId;
+	rx_pkt.length = hcan->pRxMsg->DLC;
+	rx_pkt.data.data_u8[0] = hcan->pRxMsg->Data[0];
+	rx_pkt.data.data_u8[1] = hcan->pRxMsg->Data[1];
+	rx_pkt.data.data_u8[2] = hcan->pRxMsg->Data[2];
+	rx_pkt.data.data_u8[3] = hcan->pRxMsg->Data[3];
+	rx_pkt.data.data_u8[4] = hcan->pRxMsg->Data[4];
+	rx_pkt.data.data_u8[5] = hcan->pRxMsg->Data[5];
+	rx_pkt.data.data_u8[6] = hcan->pRxMsg->Data[6];
+	rx_pkt.data.data_u8[7] = hcan->pRxMsg->Data[7];
+
+	temp_check(rx_pkt);
 
 	/* Receive */
 	if (HAL_CAN_Receive_IT(hcan, CAN_FIFO0) != HAL_OK) {
